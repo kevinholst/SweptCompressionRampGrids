@@ -83,12 +83,10 @@ set pi 3.1415926535897931
 set sweep_angle_rad [expr {$pi/180*$::sweep_angle}]
 set ramp_angle_rad [expr {$pi/180*$::ramp_angle}]
 set theta [expr {atan(tan($ramp_angle_rad)*cos($sweep_angle_rad))}]
-set ramp_width [expr {$::ramp_width}]
-set ramp_height [expr {$::ramp_height}]
+set ramp_width [expr {$::ramp_width*10.0}]      # units are mm
+set ramp_height [expr {$::ramp_height*10.0}]    # units are mm
 set upstream_widths 4
 set downstream_widths 2
-
-# 5*$::ramp_width, $::ramp_width*(5 + tan($sweep_angle_rad))
 
 # create inlet lines
 set line_segment [pw::SegmentSpline create]
@@ -190,7 +188,6 @@ set _CN(2) [pw::GridEntity getByName "forward_inlet"]
 set _CN(3) [pw::GridEntity getByName "forward_right"]
 set _CN(4) [pw::GridEntity getByName "ramp_base"]
 pw::Application setClipboard [list $_CN(4) $_CN(1) $_CN(2) $_CN(3)]
-pw::Application markUndoLevel {Copy}
 
 set _TMP(mode_1) [pw::Application begin Paste]
   set _TMP(PW_1) [$_TMP(mode_1) getEntities]
@@ -200,7 +197,6 @@ set _TMP(mode_1) [pw::Application begin Paste]
   unset _TMP(mode_2)
 $_TMP(mode_1) end
 unset _TMP(mode_1)
-pw::Application markUndoLevel {Paste}
 
 unset _TMP(PW_1)
 pw::Application clearClipboard
@@ -209,7 +205,6 @@ set _CN(6) [pw::GridEntity getByName "aft_left"]
 set _CN(7) [pw::GridEntity getByName "ramp_top"]
 set _CN(8) [pw::GridEntity getByName "aft_outlet"]
 pw::Application setClipboard [list $_CN(5) $_CN(6) $_CN(7) $_CN(8)]
-pw::Application markUndoLevel {Copy}
 
 set _TMP(mode_3) [pw::Application begin Paste]
   set _TMP(PW_2) [$_TMP(mode_3) getEntities]
@@ -219,7 +214,6 @@ set _TMP(mode_3) [pw::Application begin Paste]
   unset _TMP(mode_4)
 $_TMP(mode_3) end
 unset _TMP(mode_3)
-pw::Application markUndoLevel {Paste}
 
 unset _TMP(PW_2)
 set _TMP(mode_5) [pw::Application begin Create]
@@ -236,7 +230,6 @@ set _TMP(mode_5) [pw::Application begin Create]
   $_TMP(con_1) calculateDimension
 $_TMP(mode_5) end
 unset _TMP(mode_5)
-pw::Application markUndoLevel {Create 2 Point Connector}
 
 set _TMP(mode_6) [pw::Application begin Create]
   set _CN(13) [pw::GridEntity getByName "con-1"]
@@ -252,7 +245,6 @@ set _TMP(mode_6) [pw::Application begin Create]
   $_TMP(con_2) calculateDimension
 $_TMP(mode_6) end
 unset _TMP(mode_6)
-pw::Application markUndoLevel {Create 2 Point Connector}
 
 set _TMP(mode_7) [pw::Application begin Create]
   set _CN(16) [pw::GridEntity getByName "con-2"]
@@ -267,7 +259,6 @@ set _TMP(mode_7) [pw::Application begin Create]
   $_TMP(con_3) calculateDimension
 $_TMP(mode_7) end
 unset _TMP(mode_7)
-pw::Application markUndoLevel {Create 2 Point Connector}
 
 set _TMP(mode_8) [pw::Application begin Create]
   set _CN(18) [pw::GridEntity getByName "con-3"]
@@ -281,7 +272,6 @@ set _TMP(mode_8) [pw::Application begin Create]
   $_TMP(con_4) calculateDimension
 $_TMP(mode_8) end
 unset _TMP(mode_8)
-pw::Application markUndoLevel {Create 2 Point Connector}
 
 set _TMP(mode_9) [pw::Application begin Create]
   set _CN(19) [pw::GridEntity getByName "con-4"]
@@ -296,7 +286,6 @@ set _TMP(mode_9) [pw::Application begin Create]
   $_TMP(con_5) calculateDimension
 $_TMP(mode_9) end
 unset _TMP(mode_9)
-pw::Application markUndoLevel {Create 2 Point Connector}
 
 set _TMP(mode_10) [pw::Application begin Create]
   set _CN(21) [pw::GridEntity getByName "con-5"]
@@ -311,7 +300,6 @@ set _TMP(mode_10) [pw::Application begin Create]
   $_TMP(con_6) calculateDimension
 $_TMP(mode_10) end
 unset _TMP(mode_10)
-pw::Application markUndoLevel {Create 2 Point Connector}
 
 set _TMP(mode_10) [pw::Application begin Create]
   set _CN(23) [pw::GridEntity getByName "con-6"]
@@ -325,7 +313,6 @@ set _TMP(mode_10) [pw::Application begin Create]
   $_TMP(con_7) calculateDimension
 $_TMP(mode_10) end
 unset _TMP(mode_10)
-pw::Application markUndoLevel {Create 2 Point Connector}
 
 set _TMP(mode_10) [pw::Application begin Create]
   set _CN(24) [pw::GridEntity getByName "con-7"]
@@ -339,7 +326,6 @@ set _TMP(mode_10) [pw::Application begin Create]
   $_TMP(con_8) calculateDimension
 $_TMP(mode_10) end
 unset _TMP(mode_10)
-pw::Application markUndoLevel {Create 2 Point Connector}
 
 set _TMP(mode_10) [pw::Application begin Create]
   set _CN(25) [pw::GridEntity getByName "con-8"]
@@ -354,7 +340,6 @@ set _TMP(mode_10) [pw::Application begin Create]
   $_TMP(con_9) calculateDimension
 $_TMP(mode_10) end
 unset _TMP(mode_10)
-pw::Application markUndoLevel {Create 2 Point Connector}
 
 set _TMP(mode_10) [pw::Application begin Create]
   set _CN(27) [pw::GridEntity getByName "con-9"]
@@ -368,7 +353,6 @@ set _TMP(mode_10) [pw::Application begin Create]
   $_TMP(con_10) calculateDimension
 $_TMP(mode_10) end
 unset _TMP(mode_10)
-pw::Application markUndoLevel {Create 2 Point Connector}
 
 set _TMP(mode_10) [pw::Application begin Create]
   set _CN(28) [pw::GridEntity getByName "con-10"]
@@ -383,7 +367,6 @@ $_TMP(PW_14) set [list $_CN(21) $_CN(24) $_CN(13) $_CN(16) $_CN(19) $_CN(28) $_C
 $_TMP(PW_14) do setDimension 100
 $_TMP(PW_14) delete
 unset _TMP(PW_14)
-pw::Application markUndoLevel {Dimension}
 
 pw::Application clearClipboard
 # Use the actual spacing
@@ -396,7 +379,6 @@ unset _TMP(INDEX)
 pw::Application setClipboard [list $_TMP(SPC_1)]
 $_TMP(SPC_1) delete
 unset _TMP(SPC_1)
-pw::Application markUndoLevel {Copy}
 
 set _TMP(AVG_SPACE) 0.0
 set _TMP(COUNT) 0
@@ -420,7 +402,6 @@ set _TMP(mode_10) [pw::Application begin Modify [list $_CN(3)]]
 $_TMP(mode_10) end
 unset _TMP(mode_10)
 unset _TMP(AVG_SPACE)
-pw::Application markUndoLevel {Paste Spacing}
 
 set _TMP(AVG_SPACE) 0.0
 set _TMP(COUNT) 0
@@ -465,7 +446,6 @@ set _TMP(mode_10) [pw::Application begin Modify [list $_CN(10) $_CN(15) $_CN(14)
 $_TMP(mode_10) end
 unset _TMP(mode_10)
 unset _TMP(AVG_SPACE)
-pw::Application markUndoLevel {Paste Spacing}
 
 set _TMP(mode_10) [pw::Application begin Modify [list $_CN(21) $_CN(25) $_CN(24) $_CN(23) $_CN(19) $_CN(18) $_CN(28) $_CN(27)]]
   set _TMP(PW_24) [$_CN(18) getDistribution 1]
@@ -494,7 +474,6 @@ set _TMP(mode_10) [pw::Application begin Modify [list $_CN(21) $_CN(25) $_CN(24)
   unset _TMP(PW_31)
 $_TMP(mode_10) end
 unset _TMP(mode_10)
-pw::Application markUndoLevel {Change Spacings}
 
 set _TMP(PW_32) [pw::DomainStructured createFromConnectors -reject _TMP(unusedCons) -solid [list $_CN(1) $_CN(25) $_CN(11) $_CN(2) $_CN(12) $_CN(7) $_CN(20) $_CN(10) $_CN(15) $_CN(26) $_CN(23) $_CN(14) $_CN(9) $_CN(24) $_CN(8) $_CN(27) $_CN(17) $_CN(19) $_CN(3) $_CN(5) $_CN(13) $_CN(18) $_CN(6) $_CN(22) $_CN(4) $_CN(28) $_CN(21) $_CN(16)]]
 unset _TMP(unusedCons)
@@ -503,10 +482,8 @@ unset _TMP(unusedDoms)
 unset _TMP(poleDoms)
 unset _TMP(PW_33)
 unset _TMP(PW_32)
-pw::Application markUndoLevel {Assemble Blocks}
 
 pw::Application setCAESolver {CFD++} 3
-pw::Application markUndoLevel {Select Solver}
 
 set _DM(1) [pw::GridEntity getByName "dom-3"]
 set _DM(2) [pw::GridEntity getByName "dom-10"]
@@ -529,59 +506,44 @@ set _BL(2) [pw::GridEntity getByName "blk-2"]
 set _BL(3) [pw::GridEntity getByName "blk-3"]
 set _TMP(PW_77) [pw::BoundaryCondition getByName "Unspecified"]
 set _TMP(PW_78) [pw::BoundaryCondition create]
-pw::Application markUndoLevel {Create BC}
 
 set _TMP(PW_79) [pw::BoundaryCondition getByName "bc-2"]
 unset _TMP(PW_78)
 $_TMP(PW_79) setName "inlet"
-pw::Application markUndoLevel {Name BC}
 
 $_TMP(PW_79) apply [list [list $_BL(3) $_DM(10)]]
-pw::Application markUndoLevel {Set BC}
 
 set _TMP(PW_80) [pw::BoundaryCondition create]
-pw::Application markUndoLevel {Create BC}
 
 set _TMP(PW_81) [pw::BoundaryCondition getByName "bc-3"]
 unset _TMP(PW_80)
 $_TMP(PW_81) setName "outlet"
-pw::Application markUndoLevel {Name BC}
 
 $_TMP(PW_81) apply [list [list $_BL(2) $_DM(5)]]
-pw::Application markUndoLevel {Set BC}
 
 set _TMP(PW_82) [pw::BoundaryCondition create]
-pw::Application markUndoLevel {Create BC}
 
 set _TMP(PW_83) [pw::BoundaryCondition getByName "bc-4"]
 unset _TMP(PW_82)
 $_TMP(PW_83) setName "wall_no_slip"
-pw::Application markUndoLevel {Name BC}
 
 $_TMP(PW_83) apply [list [list $_BL(1) $_DM(4)] [list $_BL(2) $_DM(6)] [list $_BL(3) $_DM(13)]]
-pw::Application markUndoLevel {Set BC}
 
 set _TMP(PW_84) [pw::BoundaryCondition create]
-pw::Application markUndoLevel {Create BC}
 
 set _TMP(PW_85) [pw::BoundaryCondition getByName "bc-5"]
 unset _TMP(PW_84)
 $_TMP(PW_85) setName "wall_top"
-pw::Application markUndoLevel {Name BC}
 
 $_TMP(PW_85) apply [list [list $_BL(1) $_DM(3)] [list $_BL(2) $_DM(7)] [list $_BL(3) $_DM(14)]]
-pw::Application markUndoLevel {Set BC}
 
 set _TMP(PW_86) [pw::BoundaryCondition create]
-pw::Application markUndoLevel {Create BC}
 
 set _TMP(PW_87) [pw::BoundaryCondition getByName "bc-6"]
 unset _TMP(PW_86)
 $_TMP(PW_87) setName "wall_sides"
-pw::Application markUndoLevel {Name BC}
 
 $_TMP(PW_87) apply [list [list $_BL(1) $_DM(8)] [list $_BL(1) $_DM(9)] [list $_BL(2) $_DM(11)] [list $_BL(2) $_DM(12)] [list $_BL(3) $_DM(15)] [list $_BL(3) $_DM(16)]]
-pw::Application markUndoLevel {Set BC}
 
 unset _TMP(PW_77)
 unset _TMP(PW_79)
@@ -599,17 +561,3 @@ exit
 }
 
 # END SCRIPT
-
-# DISCLAIMER:
-# TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, POINTWISE DISCLAIMS
-# ALL WARRANTIES, EITHER EXPRESS OR IMPLIED, INCLUDING, BUT NOT LIMITED
-# TO, IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE, WITH REGARD TO THIS SCRIPT.  TO THE MAXIMUM EXTENT PERMITTED 
-# BY APPLICABLE LAW, IN NO EVENT SHALL POINTWISE BE LIABLE TO ANY PARTY 
-# FOR ANY SPECIAL, INCIDENTAL, INDIRECT, OR CONSEQUENTIAL DAMAGES 
-# WHATSOEVER (INCLUDING, WITHOUT LIMITATION, DAMAGES FOR LOSS OF 
-# BUSINESS INFORMATION, OR ANY OTHER PECUNIARY LOSS) ARISING OUT OF THE 
-# USE OF OR INABILITY TO USE THIS SCRIPT EVEN IF POINTWISE HAS BEEN 
-# ADVISED OF THE POSSIBILITY OF SUCH DAMAGES AND REGARDLESS OF THE 
-# FAULT OR NEGLIGENCE OF POINTWISE.
-#
