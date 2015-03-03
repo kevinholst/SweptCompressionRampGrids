@@ -83,8 +83,9 @@ set pi 3.1415926535897931
 set sweep_angle_rad [expr {$pi/180*$::sweep_angle}]
 set ramp_angle_rad [expr {$pi/180*$::ramp_angle}]
 set theta [expr {atan(tan($ramp_angle_rad)*cos($sweep_angle_rad))}]
-set ramp_width [expr {$::ramp_width*10.0}]      # units are mm
-set ramp_height [expr {$::ramp_height*10.0}]    # units are mm
+# length units are mm
+set ramp_width [expr {$::ramp_width*10.0}]
+set ramp_height [expr {$::ramp_height*10.0}]
 set upstream_widths 4
 set downstream_widths 2
 
@@ -485,11 +486,12 @@ unset _TMP(PW_32)
 
 pw::Application setCAESolver {CFD++} 3
 
-set _DM(1) [pw::GridEntity getByName "dom-3"]
+
+set _DM(1) [pw::GridEntity getByName "dom-4"]
 set _DM(2) [pw::GridEntity getByName "dom-10"]
 set _DM(3) [pw::GridEntity getByName "dom-1"]
 set _DM(4) [pw::GridEntity getByName "dom-2"]
-set _DM(5) [pw::GridEntity getByName "dom-4"]
+set _DM(5) [pw::GridEntity getByName "dom-3"]
 set _DM(6) [pw::GridEntity getByName "dom-5"]
 set _DM(7) [pw::GridEntity getByName "dom-6"]
 set _DM(8) [pw::GridEntity getByName "dom-7"]
@@ -504,60 +506,76 @@ set _DM(16) [pw::GridEntity getByName "dom-16"]
 set _BL(1) [pw::GridEntity getByName "blk-1"]
 set _BL(2) [pw::GridEntity getByName "blk-2"]
 set _BL(3) [pw::GridEntity getByName "blk-3"]
-set _TMP(PW_77) [pw::BoundaryCondition getByName "Unspecified"]
-set _TMP(PW_78) [pw::BoundaryCondition create]
+set _TMP(PW_18) [pw::BoundaryCondition getByName "Unspecified"]
+set _TMP(PW_19) [pw::BoundaryCondition create]
+pw::Application markUndoLevel {Create BC}
 
-set _TMP(PW_79) [pw::BoundaryCondition getByName "bc-2"]
-unset _TMP(PW_78)
-$_TMP(PW_79) setName "inlet"
+set _TMP(PW_20) [pw::BoundaryCondition getByName "bc-2"]
+unset _TMP(PW_19)
+$_TMP(PW_20) setName "inlet"
+pw::Application markUndoLevel {Name BC}
 
-$_TMP(PW_79) apply [list [list $_BL(3) $_DM(10)]]
+$_TMP(PW_20) apply [list [list $_BL(3) $_DM(8)]]
+pw::Application markUndoLevel {Set BC}
 
-set _TMP(PW_80) [pw::BoundaryCondition create]
+set _TMP(PW_21) [pw::BoundaryCondition create]
+pw::Application markUndoLevel {Create BC}
 
-set _TMP(PW_81) [pw::BoundaryCondition getByName "bc-3"]
-unset _TMP(PW_80)
-$_TMP(PW_81) setName "outlet"
+set _TMP(PW_22) [pw::BoundaryCondition getByName "bc-3"]
+unset _TMP(PW_21)
+$_TMP(PW_22) setName "wall_top"
+pw::Application markUndoLevel {Name BC}
 
-$_TMP(PW_81) apply [list [list $_BL(2) $_DM(5)]]
+$_TMP(PW_22) apply [list [list $_BL(2) $_DM(7)] [list $_BL(3) $_DM(14)] [list $_BL(1) $_DM(3)]]
+pw::Application markUndoLevel {Set BC}
 
-set _TMP(PW_82) [pw::BoundaryCondition create]
+set _TMP(PW_23) [pw::BoundaryCondition create]
+pw::Application markUndoLevel {Create BC}
 
-set _TMP(PW_83) [pw::BoundaryCondition getByName "bc-4"]
-unset _TMP(PW_82)
-$_TMP(PW_83) setName "wall_no_slip"
+set _TMP(PW_24) [pw::BoundaryCondition getByName "bc-4"]
+unset _TMP(PW_23)
+$_TMP(PW_24) setName "wall_sides"
+pw::Application markUndoLevel {Name BC}
 
-$_TMP(PW_83) apply [list [list $_BL(1) $_DM(4)] [list $_BL(2) $_DM(6)] [list $_BL(3) $_DM(13)]]
+$_TMP(PW_24) apply [list [list $_BL(3) $_DM(16)] [list $_BL(1) $_DM(10)] [list $_BL(1) $_DM(9)] [list $_BL(2) $_DM(11)] [list $_BL(2) $_DM(12)] [list $_BL(3) $_DM(15)]]
+pw::Application markUndoLevel {Set BC}
 
-set _TMP(PW_84) [pw::BoundaryCondition create]
+set _TMP(PW_25) [pw::BoundaryCondition create]
+pw::Application markUndoLevel {Create BC}
 
-set _TMP(PW_85) [pw::BoundaryCondition getByName "bc-5"]
-unset _TMP(PW_84)
-$_TMP(PW_85) setName "wall_top"
+set _TMP(PW_26) [pw::BoundaryCondition getByName "bc-5"]
+unset _TMP(PW_25)
+$_TMP(PW_26) setName "wall_no_slip"
+pw::Application markUndoLevel {Name BC}
 
-$_TMP(PW_85) apply [list [list $_BL(1) $_DM(3)] [list $_BL(2) $_DM(7)] [list $_BL(3) $_DM(14)]]
+$_TMP(PW_26) apply [list [list $_BL(1) $_DM(4)] [list $_BL(2) $_DM(6)] [list $_BL(3) $_DM(13)]]
+pw::Application markUndoLevel {Set BC}
 
-set _TMP(PW_86) [pw::BoundaryCondition create]
+set _TMP(PW_27) [pw::BoundaryCondition create]
+pw::Application markUndoLevel {Create BC}
 
-set _TMP(PW_87) [pw::BoundaryCondition getByName "bc-6"]
-unset _TMP(PW_86)
-$_TMP(PW_87) setName "wall_sides"
+set _TMP(PW_28) [pw::BoundaryCondition getByName "bc-6"]
+unset _TMP(PW_27)
+$_TMP(PW_28) setName "outlet"
+pw::Application markUndoLevel {Name BC}
 
-$_TMP(PW_87) apply [list [list $_BL(1) $_DM(8)] [list $_BL(1) $_DM(9)] [list $_BL(2) $_DM(11)] [list $_BL(2) $_DM(12)] [list $_BL(3) $_DM(15)] [list $_BL(3) $_DM(16)]]
+$_TMP(PW_28) apply [list [list $_BL(2) $_DM(5)]]
+pw::Application markUndoLevel {Set BC}
 
-unset _TMP(PW_77)
-unset _TMP(PW_79)
-unset _TMP(PW_81)
-unset _TMP(PW_83)
-unset _TMP(PW_85)
-unset _TMP(PW_87)
+unset _TMP(PW_18)
+unset _TMP(PW_20)
+unset _TMP(PW_22)
+unset _TMP(PW_24)
+unset _TMP(PW_26)
+unset _TMP(PW_28)
 
 
 # Zoom to geometry
-pw::Display resetView
+pw::Display resetView +Y
 
 exit
 
 }
 
 # END SCRIPT
+
