@@ -52,6 +52,8 @@ bind . <Return> {generate_scr}
 
 proc generate_scr {} {
 
+
+#### Old drawing... kept it because it took a while to make...
 # (1)      (2)  (3)                            (4)
 # _______________________________________________
 #             \   \
@@ -75,6 +77,16 @@ proc generate_scr {} {
 # -----------------------------------------------
 #
 
+# Set defaults
+# -----------------------------------------------
+pw::Connector setCalculateDimensionMethod Spacing
+pw::Connector setCalculateDimensionSpacing 10.0
+pw::DomainUnstructured setDefault BoundaryDecay 0.995
+pw::DomainUnstructured setDefault TRexMaximumLayers 30
+pw::TRexCondition setAutomaticWallSpacing 0.001
+pw::Application setCAESolver {CFD++} 3
+
+
 # GENERATE SCR COORDINATES
 # -----------------------------------------------
 # Initialize Arrays and variables
@@ -86,489 +98,628 @@ set theta [expr {atan(tan($ramp_angle_rad)*cos($sweep_angle_rad))}]
 # length units are mm
 set ramp_width [expr {$::ramp_width*10.0}]
 set ramp_height [expr {$::ramp_height*10.0}]
-set upstream_widths 4
-set downstream_widths 2
+set upstream_widths 2
+set downstream_widths 1
+set height_widths 1.5
+set side_widths 1.5
+set min_spacing 2.0
 
-# create inlet lines
-set line_segment [pw::SegmentSpline create]
-$line_segment addPoint {0 0 0}
-$line_segment addPoint [list 0 $ramp_width 0]
-set forward_inlet [pw::Connector create]
-$forward_inlet addSegment $line_segment
-$forward_inlet setDimension 100
-$forward_inlet setName "forward_inlet"
-unset line_segment
+## ramp face
+# (2) ______________________ (3)
+#    |                      |
+#    |                      |
+#    |                      |
+#    |                      |
+# (1)|______________________|(4)
+
+# Set up points of interest
+set outlet_x [expr {($upstream_widths + $downstream_widths + tan($sweep_angle_rad))*$ramp_width + $ramp_height/tan($theta)}]
+set ramp_point_1 [list [expr {$ramp_width*$upstream_widths}] $ramp_width 0]
+set ramp_point_2 [list [expr {$ramp_width*$upstream_widths + $ramp_height/tan($theta)}] $ramp_width $ramp_height]
+set ramp_point_3 [list [expr {$ramp_width*($upstream_widths + tan($sweep_angle_rad)) + $ramp_height/tan($theta)}] 0 $ramp_height]
+set ramp_point_4 [list [expr {$ramp_width*($upstream_widths + tan($sweep_angle_rad))}] 0 0]
+set outlet_point_2 [list $outlet_x $ramp_width $ramp_height]
+set outlet_point_3 [list $outlet_x 0 $ramp_height]
+set outlet_point_4 [list $outlet_x 0 0]
+
+# -----------------------------------------------
+# create ramp
+# -----------------------------------------------
+
+puts "Creating connectors"
 
 set line_segment [pw::SegmentSpline create]
-$line_segment addPoint {0 0 0}
-$line_segment addPoint [list [expr {$ramp_width*($upstream_widths + tan($sweep_angle_rad))}] 0 0]
-set forward_right [pw::Connector create]
-$forward_right addSegment $line_segment
-$forward_right setDimension 100
-$forward_right setName "forward_right"
-unset line_segment
-
-set line_segment [pw::SegmentSpline create]
-$line_segment addPoint [list 0 $ramp_width 0]
-$line_segment addPoint [list [expr {$ramp_width*$upstream_widths}] $ramp_width 0]
-set forward_left [pw::Connector create]
-$forward_left addSegment $line_segment
-$forward_left setDimension 100
-$forward_left setName "forward_left"
-unset line_segment
-
-# create ramp lines
-set line_segment [pw::SegmentSpline create]
-$line_segment addPoint [list [expr {$ramp_width*($upstream_widths + tan($sweep_angle_rad))}] 0 0]
-$line_segment addPoint [list [expr {$ramp_width*$upstream_widths}] $ramp_width 0]
+$line_segment addPoint $ramp_point_1
+$line_segment addPoint $ramp_point_4
 set ramp_base [pw::Connector create]
 $ramp_base addSegment $line_segment
-$ramp_base setDimension 100
 $ramp_base setName "ramp_base"
+$ramp_base setDimensionFromSpacing $min_spacing
 unset line_segment
 
 set line_segment [pw::SegmentSpline create]
-$line_segment addPoint [list [expr {$ramp_width*($upstream_widths + tan($sweep_angle_rad))}] 0 0]
-$line_segment addPoint [list [expr {$ramp_width*($upstream_widths + tan($sweep_angle_rad)) + $ramp_height/tan($theta)}] 0 $ramp_height]
+$line_segment addPoint $ramp_point_4
+$line_segment addPoint $ramp_point_3
 set ramp_right [pw::Connector create]
 $ramp_right addSegment $line_segment
-$ramp_right setDimension 100
 $ramp_right setName "ramp_right"
+set distribution [$ramp_right getDistribution 1]
+	$distribution setBeginSpacing $min_spacing
+	$distribution setEndSpacing 2.0
+unset distribution
+$ramp_right setDimensionFromDistribution
 unset line_segment
 
 set line_segment [pw::SegmentSpline create]
-$line_segment addPoint [list [expr {$ramp_width*$upstream_widths}] $ramp_width 0]
-$line_segment addPoint [list [expr {$ramp_width*$upstream_widths + $ramp_height/tan($theta)}] $ramp_width $ramp_height]
+$line_segment addPoint $ramp_point_1
+$line_segment addPoint $ramp_point_2
 set ramp_left [pw::Connector create]
 $ramp_left addSegment $line_segment
-$ramp_left setDimension 100
 $ramp_left setName "ramp_left"
+set distribution [$ramp_left getDistribution 1]
+	$distribution setBeginSpacing $min_spacing
+	$distribution setEndSpacing 2.0
+unset distribution
+$ramp_left setDimensionFromDistribution
 unset line_segment
 
 set line_segment [pw::SegmentSpline create]
-$line_segment addPoint [list [expr {$ramp_width*($upstream_widths + tan($sweep_angle_rad)) + $ramp_height/tan($theta)}] 0 $ramp_height]
-$line_segment addPoint [list [expr {$ramp_width*$upstream_widths + $ramp_height/tan($theta)}] $ramp_width $ramp_height]
+$line_segment addPoint $ramp_point_2
+$line_segment addPoint $ramp_point_3
 set ramp_top [pw::Connector create]
 $ramp_top addSegment $line_segment
-$ramp_top setDimension 100
+$ramp_top calculateDimension
 $ramp_top setName "ramp_top"
-unset line_segment
-
-# create outlet lines
-set line_segment [pw::SegmentSpline create]
-$line_segment addPoint [list [expr {$ramp_width*(($upstream_widths + $downstream_widths) + tan($sweep_angle_rad)) + $ramp_height/tan($theta)}] 0 $ramp_height]
-$line_segment addPoint [list [expr {$ramp_width*(($upstream_widths + $downstream_widths) + tan($sweep_angle_rad)) + $ramp_height/tan($theta)}] $ramp_width $ramp_height]
-set aft_outlet [pw::Connector create]
-$aft_outlet addSegment $line_segment
-$aft_outlet setDimension 100
-$aft_outlet setName "aft_outlet"
+$ramp_top setDimensionFromSpacing 2.0
 unset line_segment
 
 set line_segment [pw::SegmentSpline create]
-$line_segment addPoint [list [expr {$ramp_width*($upstream_widths + tan($sweep_angle_rad)) + $ramp_height/tan($theta)}] 0 $ramp_height]
-$line_segment addPoint [list [expr {$ramp_width*(($upstream_widths + $downstream_widths) + tan($sweep_angle_rad)) + $ramp_height/tan($theta)}] 0 $ramp_height]
-set aft_right [pw::Connector create]
-$aft_right addSegment $line_segment
-$aft_right setDimension 100
-$aft_right setName "aft_right"
+$line_segment addPoint $ramp_point_2
+$line_segment addPoint $outlet_point_2
+set ramp_top_left [pw::Connector create]
+$ramp_top_left addSegment $line_segment
+$ramp_top_left setName "ramp_top_left"
+set distribution [$ramp_top_left getDistribution 1]
+	$distribution setBeginSpacing 2.0
+	$distribution setEndSpacing 2.0
+unset distribution
+$ramp_top_left setDimensionFromDistribution
 unset line_segment
 
 set line_segment [pw::SegmentSpline create]
-$line_segment addPoint [list [expr {$ramp_width*$upstream_widths + $ramp_height/tan($theta)}] $ramp_width $ramp_height]
-$line_segment addPoint [list [expr {$ramp_width*(($upstream_widths + $downstream_widths) + tan($sweep_angle_rad)) + $ramp_height/tan($theta)}] $ramp_width $ramp_height]
-set aft_left [pw::Connector create]
-$aft_left addSegment $line_segment
-$aft_left setDimension 100
-$aft_left setName "aft_left"
+$line_segment addPoint $ramp_point_3
+$line_segment addPoint $outlet_point_3
+set ramp_top_right [pw::Connector create]
+$ramp_top_right addSegment $line_segment
+$ramp_top_right setName "ramp_top_right"
+set distribution [$ramp_top_right getDistribution 1]
+	$distribution setBeginSpacing 2.0
+	$distribution setEndSpacing 2.0
+unset distribution
+$ramp_top_right setDimensionFromDistribution
 unset line_segment
 
-# copy and paste to create ceiling
-pw::Application clearClipboard
-set _CN(1) [pw::GridEntity getByName "forward_left"]
-set _CN(2) [pw::GridEntity getByName "forward_inlet"]
-set _CN(3) [pw::GridEntity getByName "forward_right"]
-set _CN(4) [pw::GridEntity getByName "ramp_base"]
-pw::Application setClipboard [list $_CN(4) $_CN(1) $_CN(2) $_CN(3)]
+set line_segment [pw::SegmentSpline create]
+$line_segment addPoint $ramp_point_4
+$line_segment addPoint $outlet_point_4
+set ramp_right_base [pw::Connector create]
+$ramp_right_base addSegment $line_segment
+$ramp_right_base calculateDimension
+$ramp_right_base setName "ramp_right_base"
+set distribution [$ramp_right_base getDistribution 1]
+	$distribution setBeginSpacing $min_spacing
+	$distribution setEndSpacing 2.0
+unset distribution
+$ramp_right_base setDimensionFromDistribution
+unset line_segment
 
-set _TMP(mode_1) [pw::Application begin Paste]
-  set _TMP(PW_1) [$_TMP(mode_1) getEntities]
-  set _TMP(mode_2) [pw::Application begin Modify $_TMP(PW_1)]
-    pw::Entity transform [pwu::Transform translation [list 0 0 [expr {$ramp_height+2*$ramp_width}]]] [$_TMP(mode_2) getEntities]
-  $_TMP(mode_2) end
-  unset _TMP(mode_2)
-$_TMP(mode_1) end
-unset _TMP(mode_1)
+set line_segment [pw::SegmentSpline create]
+$line_segment addPoint $outlet_point_2
+$line_segment addPoint $outlet_point_3
+set ramp_top_outlet [pw::Connector create]
+$ramp_top_outlet addSegment $line_segment
+$ramp_top_outlet setDimensionFromSpacing 2.0
+$ramp_top_outlet setName "ramp_top_outlet"
+unset line_segment
 
-unset _TMP(PW_1)
-pw::Application clearClipboard
-set _CN(5) [pw::GridEntity getByName "aft_right"]
-set _CN(6) [pw::GridEntity getByName "aft_left"]
-set _CN(7) [pw::GridEntity getByName "ramp_top"]
-set _CN(8) [pw::GridEntity getByName "aft_outlet"]
-pw::Application setClipboard [list $_CN(5) $_CN(6) $_CN(7) $_CN(8)]
+set line_segment [pw::SegmentSpline create]
+$line_segment addPoint $outlet_point_3
+$line_segment addPoint $outlet_point_4
+set ramp_right_outlet [pw::Connector create]
+$ramp_right_outlet addSegment $line_segment
+$ramp_right_outlet calculateDimension
+$ramp_right_outlet setName "ramp_right_outlet"
+unset line_segment
 
-set _TMP(mode_3) [pw::Application begin Paste]
-  set _TMP(PW_2) [$_TMP(mode_3) getEntities]
-  set _TMP(mode_4) [pw::Application begin Modify $_TMP(PW_2)]
-    pw::Entity transform [pwu::Transform translation [list 0 0 [expr {2*$ramp_width}]]] [$_TMP(mode_4) getEntities]
-  $_TMP(mode_4) end
-  unset _TMP(mode_4)
-$_TMP(mode_3) end
-unset _TMP(mode_3)
+# -----------------------------------------------
+# create overall box
+# -----------------------------------------------
+set top_z [expr {$ramp_height + $height_widths*$ramp_width}]
+set left_y $ramp_width
+set right_y [expr {-$side_widths*$ramp_width}]
 
-unset _TMP(PW_2)
-set _TMP(mode_5) [pw::Application begin Create]
-  set _CN(9) [pw::GridEntity getByName "ramp_base-1"]
-  set _CN(10) [pw::GridEntity getByName "forward_left-1"]
-  set _TMP(PW_3) [pw::SegmentSpline create]
-  set _CN(11) [pw::GridEntity getByName "aft_left-1"]
-  set _CN(12) [pw::GridEntity getByName "ramp_top-1"]
-  $_TMP(PW_3) addPoint [$_CN(9) getPosition -arc 1]
-  $_TMP(PW_3) addPoint [$_CN(11) getPosition -arc 0]
-  set _TMP(con_1) [pw::Connector create]
-  $_TMP(con_1) addSegment $_TMP(PW_3)
-  unset _TMP(PW_3)
-  $_TMP(con_1) calculateDimension
-$_TMP(mode_5) end
-unset _TMP(mode_5)
 
-set _TMP(mode_6) [pw::Application begin Create]
-  set _CN(13) [pw::GridEntity getByName "con-1"]
-  set _CN(14) [pw::GridEntity getByName "forward_right-1"]
-  set _TMP(PW_4) [pw::SegmentSpline create]
-  set _CN(15) [pw::GridEntity getByName "aft_right-1"]
-  $_TMP(PW_4) addPoint [$_CN(9) getPosition -arc 0]
-  $_TMP(PW_4) addPoint [$_CN(15) getPosition -arc 0]
-  unset _TMP(con_1)
-  set _TMP(con_2) [pw::Connector create]
-  $_TMP(con_2) addSegment $_TMP(PW_4)
-  unset _TMP(PW_4)
-  $_TMP(con_2) calculateDimension
+# inlet region
+
+set line_segment [pw::SegmentSpline create]
+$line_segment addPoint [list 0 $left_y 0]
+$line_segment addPoint [list 0 $right_y 0]
+set inlet_base [pw::Connector create]
+$inlet_base addSegment $line_segment
+$inlet_base setName "inlet_base"
+$inlet_base calculateDimension
+unset line_segment
+
+set line_segment [pw::SegmentSpline create]
+$line_segment addPoint [list 0 $ramp_width 0]
+$line_segment addPoint [list 0 $ramp_width $top_z]
+set inlet_left [pw::Connector create]
+$inlet_left addSegment $line_segment
+$inlet_left setName "inlet_left"
+$inlet_left calculateDimension
+unset line_segment
+
+set line_segment [pw::SegmentSpline create]
+$line_segment addPoint [list 0 $right_y 0]
+$line_segment addPoint [list 0 $right_y $top_z]
+set inlet_right [pw::Connector create]
+$inlet_right addSegment $line_segment
+$inlet_right setName "inlet_right"
+$inlet_right calculateDimension
+unset line_segment
+
+set line_segment [pw::SegmentSpline create]
+$line_segment addPoint [list 0 $left_y $top_z]
+$line_segment addPoint [list 0 $right_y $top_z]
+set inlet_top [pw::Connector create]
+$inlet_top addSegment $line_segment
+$inlet_top setName "inlet_top"
+$inlet_top calculateDimension
+unset line_segment
+
+
+# outlet region
+
+set line_segment [pw::SegmentSpline create]
+$line_segment addPoint [list $outlet_x 0 0]
+$line_segment addPoint [list $outlet_x $right_y 0]
+set outlet_base [pw::Connector create]
+$outlet_base addSegment $line_segment
+$outlet_base setName "outlet_base"
+$outlet_base calculateDimension
+unset line_segment
+
+set line_segment [pw::SegmentSpline create]
+$line_segment addPoint [list $outlet_x $ramp_width $ramp_height]
+$line_segment addPoint [list $outlet_x $ramp_width $top_z]
+set outlet_left [pw::Connector create]
+$outlet_left addSegment $line_segment
+$outlet_left setName "outlet_left"
+$outlet_left calculateDimension
+unset line_segment
+
+set line_segment [pw::SegmentSpline create]
+$line_segment addPoint [list $outlet_x $right_y 0]
+$line_segment addPoint [list $outlet_x $right_y $top_z]
+set outlet_right [pw::Connector create]
+$outlet_right addSegment $line_segment
+$outlet_right setName "outlet_right"
+$outlet_right calculateDimension
+unset line_segment
+
+set line_segment [pw::SegmentSpline create]
+$line_segment addPoint [list $outlet_x $left_y $top_z]
+$line_segment addPoint [list $outlet_x $right_y $top_z]
+set outlet_top [pw::Connector create]
+$outlet_top addSegment $line_segment
+$outlet_top setName "outlet_top"
+$outlet_top calculateDimension
+unset line_segment
+
+
+# sides
+
+set line_segment [pw::SegmentSpline create]
+$line_segment addPoint [list 0 $left_y 0]
+$line_segment addPoint $ramp_point_1
+set left_base [pw::Connector create]
+$left_base addSegment $line_segment
+$left_base setName "left_base"
+set distribution [$left_base getDistribution 1]
+	$distribution setBeginSpacing 10.0
+	$distribution setEndSpacing 0.5
+unset distribution
+$left_base setDimensionFromDistribution
+unset line_segment
+
+set line_segment [pw::SegmentSpline create]
+$line_segment addPoint [list 0 $left_y $top_z]
+$line_segment addPoint [list $outlet_x $left_y $top_z]
+set left_top [pw::Connector create]
+$left_top addSegment $line_segment
+$left_top setName "left_top"
+$left_top calculateDimension
+unset line_segment
+
+set line_segment [pw::SegmentSpline create]
+$line_segment addPoint [list 0 $right_y 0]
+$line_segment addPoint [list $outlet_x $right_y 0]
+set right_base [pw::Connector create]
+$right_base addSegment $line_segment
+$right_base setName "right_base"
+$right_base calculateDimension
+unset line_segment
+
+set line_segment [pw::SegmentSpline create]
+$line_segment addPoint [list 0 $right_y $top_z]
+$line_segment addPoint [list $outlet_x $right_y $top_z]
+set right_top [pw::Connector create]
+$right_top addSegment $line_segment
+$right_top setName "right_top"
+$right_top calculateDimension
+unset line_segment
+
+
+#
+# create domains
+#
+puts "Creating domains"
+
+set dom_inlet [pw::DomainUnstructured createFromConnectors -reject _TMP(unusedCons)  [list $inlet_base $inlet_left $inlet_top $inlet_right]]
+$dom_inlet setName "dom_inlet"
+
+set dom_left [pw::DomainUnstructured createFromConnectors -reject _TMP(unusedCons)  [list $inlet_left $left_base $left_top $ramp_left $ramp_top_left $outlet_left]]
+$dom_left setName "dom_left"
+
+set dom_right [pw::DomainUnstructured createFromConnectors -reject _TMP(unusedCons)  [list $inlet_right $right_base $right_top $outlet_right]]
+$dom_right setName "dom_right"
+
+set dom_top [pw::DomainUnstructured createFromConnectors -reject _TMP(unusedCons)  [list $inlet_top $right_top $left_top $outlet_top]]
+$dom_top setName "dom_top"
+
+set dom_base [pw::DomainUnstructured createFromConnectors -reject _TMP(unusedCons)  [list $inlet_base $right_base $left_base $outlet_base $ramp_base $ramp_right_base]]
+$dom_base setName "dom_base"
+
+set dom_outlet [pw::DomainUnstructured createFromConnectors -reject _TMP(unusedCons)  [list $outlet_base $outlet_right $outlet_left $outlet_top $ramp_right_outlet $ramp_top_outlet]]
+$dom_outlet setName "dom_outlet"
+
+set dom_ramp [pw::DomainUnstructured createFromConnectors -reject _TMP(unusedCons)  [list $ramp_base $ramp_right $ramp_left $ramp_top]]
+$dom_ramp setName "dom_ramp"
+
+set dom_ramp_top [pw::DomainUnstructured createFromConnectors -reject _TMP(unusedCons)  [list $ramp_top $ramp_top_outlet $ramp_top_left $ramp_top_right]]
+$dom_ramp_top setName "dom_ramp_top"
+
+set dom_ramp_right [pw::DomainUnstructured createFromConnectors -reject _TMP(unusedCons)  [list $ramp_right $ramp_top_right $ramp_right_base $ramp_right_outlet]]
+$dom_ramp_right setName "dom_ramp_right"
+
+#
+# set up TREX domains
+#
+puts "Setting up TREX domains"
+
+set _DM(1) [pw::GridEntity getByName "dom_inlet"]
+set _TMP(mode_10) [pw::Application begin UnstructuredSolver [list $_DM(1)]]
+  set _CN(1) [pw::GridEntity getByName "inlet_right"]
+  set _CN(2) [pw::GridEntity getByName "inlet_base"]
+  set _CN(3) [pw::GridEntity getByName "inlet_left"]
+  set _CN(4) [pw::GridEntity getByName "inlet_top"]
+  set _TMP(PW_82) [pw::TRexCondition getByName {Unspecified}]
+  set _TMP(PW_83) [pw::TRexCondition create]
+  set _TMP(PW_84) [pw::TRexCondition getByName {bc-2}]
+  unset _TMP(PW_83)
+  $_TMP(PW_84) setName {wall}
+  $_TMP(PW_84) setType {Wall}
+  $_TMP(PW_84) apply [list [list $_DM(1) $_CN(2) Same]]
+  set _TMP(PW_85) [pw::TRexCondition create]
+  set _TMP(PW_86) [pw::TRexCondition getByName {bc-3}]
+  unset _TMP(PW_85)
+  $_TMP(PW_86) setType {AdjacentGrid}
+  $_TMP(PW_86) setName {sides}
+  $_TMP(PW_86) apply [list [list $_DM(1) $_CN(1) Same] [list $_DM(1) $_CN(3) Opposite]]
+  set _TMP(PW_87) [pw::TRexCondition create]
+  set _TMP(PW_88) [pw::TRexCondition getByName {bc-4}]
+  unset _TMP(PW_87)
+  $_TMP(PW_88) setName {top}
+  $_TMP(PW_88) apply [list [list $_DM(1) $_CN(4) Opposite]]
+  set _TMP(ENTS) [pw::Collection create]
+$_TMP(ENTS) set [list $_DM(1)]
+  $_DM(1) setUnstructuredSolverAttribute TRexPushAttributes True
+  $_TMP(ENTS) delete
+  unset _TMP(ENTS)
+$_TMP(mode_10) end
+unset _TMP(mode_10)
+pw::Application markUndoLevel {Solve}
+
+set _TMP(mode_10) [pw::Application begin UnstructuredSolver [list $_DM(1)]]
+  set _TMP(ENTS) [pw::Collection create]
+$_TMP(ENTS) set [list $_DM(1)]
+  $_DM(1) setUnstructuredSolverAttribute BoundaryDecay 0.5
+  $_TMP(ENTS) delete
+  unset _TMP(ENTS)
+$_TMP(mode_10) end
+unset _TMP(mode_10)
+pw::Application markUndoLevel {Solve}
+
+set _TMP(mode_10) [pw::Application begin UnstructuredSolver [list $_DM(1)]]
+  $_TMP(mode_10) run Initialize
+  $_TMP(PW_86) setType {Match}
+$_TMP(mode_10) end
+unset _TMP(mode_10)
+pw::Application markUndoLevel {Solve}
+
+set _TMP(mode_10) [pw::Application begin UnstructuredSolver [list $_DM(1)]]
+  $_TMP(mode_10) run Initialize
+$_TMP(mode_10) end
+unset _TMP(mode_10)
+pw::Application markUndoLevel {Solve}
+
+unset _TMP(PW_82)
+unset _TMP(PW_84)
+unset _TMP(PW_86)
+unset _TMP(PW_88)
+set _DM(2) [pw::GridEntity getByName "dom_right"]
+set _TMP(mode_10) [pw::Application begin UnstructuredSolver [list $_DM(2)]]
+  set _TMP(ENTS) [pw::Collection create]
+$_TMP(ENTS) set [list $_DM(2)]
+  $_DM(2) setUnstructuredSolverAttribute TRexPushAttributes True
+  $_TMP(ENTS) delete
+  unset _TMP(ENTS)
+  set _CN(5) [pw::GridEntity getByName "right_base"]
+  set _CN(6) [pw::GridEntity getByName "right_top"]
+  set _CN(7) [pw::GridEntity getByName "outlet_right"]
+  set _TMP(PW_89) [pw::TRexCondition getByName {Unspecified}]
+  set _TMP(PW_90) [pw::TRexCondition getByName {wall}]
+  set _TMP(PW_91) [pw::TRexCondition getByName {sides}]
+  set _TMP(PW_92) [pw::TRexCondition getByName {top}]
+  $_TMP(PW_90) apply [list [list $_DM(2) $_CN(5) Opposite]]
+  $_TMP(PW_91) apply [list [list $_DM(2) $_CN(1) Same] [list $_DM(2) $_CN(7) Opposite]]
+  $_TMP(PW_92) apply [list [list $_DM(2) $_CN(1) Same] [list $_DM(2) $_CN(7) Opposite] [list $_DM(2) $_CN(6) Same]]
+  $_TMP(PW_91) apply [list [list $_DM(2) $_CN(1) Same] [list $_DM(2) $_CN(7) Opposite]]
+$_TMP(mode_10) end
+unset _TMP(mode_10)
+pw::Application markUndoLevel {Solve}
+
+set _TMP(mode_10) [pw::Application begin UnstructuredSolver [list $_DM(2)]]
+  set _TMP(ENTS) [pw::Collection create]
+$_TMP(ENTS) set [list $_DM(2)]
+  $_DM(2) setUnstructuredSolverAttribute BoundaryDecay 0.5
+  $_TMP(ENTS) delete
+  unset _TMP(ENTS)
+$_TMP(mode_10) end
+unset _TMP(mode_10)
+pw::Application markUndoLevel {Solve}
+
+set _TMP(mode_10) [pw::Application begin UnstructuredSolver [list $_DM(2)]]
+  $_TMP(mode_10) run Initialize
+$_TMP(mode_10) end
+unset _TMP(mode_10)
+pw::Application markUndoLevel {Solve}
+
+unset _TMP(PW_89)
+unset _TMP(PW_90)
+unset _TMP(PW_91)
+unset _TMP(PW_92)
+set _DM(3) [pw::GridEntity getByName "dom_left"]
+set _TMP(mode_10) [pw::Application begin UnstructuredSolver [list $_DM(3)]]
+  set _CN(8) [pw::GridEntity getByName "outlet_left"]
+  set _CN(9) [pw::GridEntity getByName "ramp_left"]
+  set _CN(10) [pw::GridEntity getByName "left_base"]
+  set _CN(11) [pw::GridEntity getByName "ramp_top_left"]
+  set _CN(12) [pw::GridEntity getByName "left_top"]
+  set _TMP(PW_93) [pw::TRexCondition getByName {Unspecified}]
+  set _TMP(PW_94) [pw::TRexCondition getByName {wall}]
+  set _TMP(PW_95) [pw::TRexCondition getByName {sides}]
+  set _TMP(PW_96) [pw::TRexCondition getByName {top}]
+  $_TMP(PW_94) apply [list [list $_DM(3) $_CN(10) Same] [list $_DM(3) $_CN(9) Same] [list $_DM(3) $_CN(11) Same]]
+  $_TMP(PW_95) apply [list [list $_DM(3) $_CN(3) Opposite] [list $_DM(3) $_CN(8) Same]]
+  $_TMP(PW_96) apply [list [list $_DM(3) $_CN(12) Opposite]]
+  $_TMP(mode_10) run Initialize
+  set _TMP(ENTS) [pw::Collection create]
+$_TMP(ENTS) set [list $_DM(3)]
+  $_DM(3) setUnstructuredSolverAttribute TRexPushAttributes True
+  $_TMP(ENTS) delete
+  unset _TMP(ENTS)
+  $_TMP(mode_10) run Initialize
+$_TMP(mode_10) end
+unset _TMP(mode_10)
+pw::Application markUndoLevel {Solve}
+
+unset _TMP(PW_93)
+unset _TMP(PW_94)
+unset _TMP(PW_95)
+unset _TMP(PW_96)
+set _DM(4) [pw::GridEntity getByName "dom_ramp_right"]
+set _TMP(mode_10) [pw::Application begin UnstructuredSolver [list $_DM(4)]]
+  set _CN(13) [pw::GridEntity getByName "ramp_right_outlet"]
+  set _CN(14) [pw::GridEntity getByName "ramp_right_base"]
+  set _CN(15) [pw::GridEntity getByName "ramp_top_right"]
+  set _CN(16) [pw::GridEntity getByName "ramp_right"]
+  set _TMP(PW_97) [pw::TRexCondition getByName {Unspecified}]
+  set _TMP(PW_98) [pw::TRexCondition getByName {wall}]
+  set _TMP(PW_99) [pw::TRexCondition getByName {sides}]
+  set _TMP(PW_100) [pw::TRexCondition getByName {top}]
+  $_TMP(PW_98) apply [list [list $_DM(4) $_CN(14) Opposite]]
+  $_TMP(PW_99) apply [list [list $_DM(4) $_CN(16) Same] [list $_DM(4) $_CN(13) Same]]
+  $_TMP(PW_100) apply [list [list $_DM(4) $_CN(15) Same]]
+  set _TMP(ENTS) [pw::Collection create]
+$_TMP(ENTS) set [list $_DM(4)]
+  $_DM(4) setUnstructuredSolverAttribute TRexPushAttributes True
+  $_TMP(ENTS) delete
+  unset _TMP(ENTS)
+  $_TMP(mode_10) run Initialize
+$_TMP(mode_10) end
+unset _TMP(mode_10)
+pw::Application markUndoLevel {Solve}
+
+set _TMP(mode_10) [pw::Application begin UnstructuredSolver [list $_DM(4)]]
+$_TMP(mode_10) abort
+unset _TMP(mode_10)
+unset _TMP(PW_97)
+unset _TMP(PW_98)
+unset _TMP(PW_99)
+unset _TMP(PW_100)
+set _DM(5) [pw::GridEntity getByName "dom_outlet"]
+set _TMP(mode_10) [pw::Application begin UnstructuredSolver [list $_DM(5)]]
+  set _TMP(ENTS) [pw::Collection create]
+$_TMP(ENTS) set [list $_DM(5)]
+  $_DM(5) setUnstructuredSolverAttribute TRexPushAttributes True
+  $_TMP(ENTS) delete
+  unset _TMP(ENTS)
+  set _CN(17) [pw::GridEntity getByName "outlet_top"]
+  set _CN(18) [pw::GridEntity getByName "outlet_base"]
+  set _CN(19) [pw::GridEntity getByName "ramp_top_outlet"]
+  set _TMP(PW_101) [pw::TRexCondition getByName {Unspecified}]
+  set _TMP(PW_102) [pw::TRexCondition getByName {wall}]
+  set _TMP(PW_103) [pw::TRexCondition getByName {sides}]
+  set _TMP(PW_104) [pw::TRexCondition getByName {top}]
+  $_TMP(PW_102) apply [list [list $_DM(5) $_CN(18) Same] [list $_DM(5) $_CN(19) Same]]
+  $_TMP(PW_103) apply [list [list $_DM(5) $_CN(7) Same] [list $_DM(5) $_CN(8) Opposite] [list $_DM(5) $_CN(13) Same]]
+  $_TMP(PW_104) apply [list [list $_DM(5) $_CN(17) Opposite]]
+  set _TMP(ENTS) [pw::Collection create]
+$_TMP(ENTS) set [list $_DM(5)]
+  $_DM(5) setUnstructuredSolverAttribute BoundaryDecay 0.5
+  $_TMP(ENTS) delete
+  unset _TMP(ENTS)
+$_TMP(mode_10) end
+unset _TMP(mode_10)
+pw::Application markUndoLevel {Solve}
+
+set _TMP(mode_10) [pw::Application begin UnstructuredSolver [list $_DM(5)]]
+  $_TMP(mode_10) run Initialize
+$_TMP(mode_10) end
+unset _TMP(mode_10)
+pw::Application markUndoLevel {Solve}
+
+unset _TMP(PW_101)
+unset _TMP(PW_102)
+unset _TMP(PW_103)
+unset _TMP(PW_104)
+
+puts "Initializing block. Could take a while."
+
+set _DM(1) [pw::GridEntity getByName "dom_base"]
+set _DM(2) [pw::GridEntity getByName "dom_left"]
+set _DM(3) [pw::GridEntity getByName "dom_top"]
+set _DM(4) [pw::GridEntity getByName "dom_ramp_top"]
+set _DM(5) [pw::GridEntity getByName "dom_ramp_right"]
+set _DM(6) [pw::GridEntity getByName "dom_inlet"]
+set _DM(7) [pw::GridEntity getByName "dom_right"]
+set _DM(8) [pw::GridEntity getByName "dom_outlet"]
+set _DM(9) [pw::GridEntity getByName "dom_ramp"]
+set _TMP(PW_23) [pw::BlockUnstructured createFromDomains -reject _TMP(unusedDoms) -voids _TMP(voidBlocks) -baffles _TMP(baffleFaces) [concat [list] [list $_DM(1) $_DM(2) $_DM(3) $_DM(4) $_DM(5) $_DM(6) $_DM(7) $_DM(8) $_DM(9)]]]
+unset _TMP(unusedDoms)
+unset _TMP(PW_23)
+pw::Application markUndoLevel {Assemble Blocks}
+
+set _BL(1) [pw::GridEntity getByName "blk-1"]
+set _TMP(mode_6) [pw::Application begin UnstructuredSolver [list $_BL(1)]]
+  set _TMP(ENTS) [pw::Collection create]
+$_TMP(ENTS) set [list $_BL(1)]
+  $_BL(1) setUnstructuredSolverAttribute TRexMaximumLayers 30
+  $_TMP(ENTS) delete
+  unset _TMP(ENTS)
+  set _TMP(PW_24) [pw::TRexCondition getByName {Unspecified}]
+  set _TMP(PW_25) [pw::TRexCondition getByName {wall}]
+  set _TMP(PW_26) [pw::TRexCondition getByName {sides}]
+  set _TMP(PW_27) [pw::TRexCondition getByName {top}]
+  $_TMP(PW_26) apply [list [list $_BL(1) $_DM(7) Same] [list $_BL(1) $_DM(8) Same] [list $_BL(1) $_DM(2) Same] [list $_BL(1) $_DM(6) Opposite]]
+  $_TMP(PW_26) apply [list [list $_BL(1) $_DM(5) Opposite]]
+  $_TMP(PW_27) apply [list [list $_BL(1) $_DM(3) Opposite]]
+  $_TMP(PW_25) apply [list [list $_BL(1) $_DM(1) Opposite] [list $_BL(1) $_DM(9) Same] [list $_BL(1) $_DM(4) Same]]
 $_TMP(mode_6) end
 unset _TMP(mode_6)
+pw::Application markUndoLevel {Solve}
 
-set _TMP(mode_7) [pw::Application begin Create]
-  set _CN(16) [pw::GridEntity getByName "con-2"]
-  set _CN(17) [pw::GridEntity getByName "forward_inlet-1"]
-  set _TMP(PW_5) [pw::SegmentSpline create]
-  $_TMP(PW_5) addPoint [$_CN(10) getPosition -arc 0]
-  $_TMP(PW_5) addPoint [$_CN(2) getPosition -arc 1]
-  unset _TMP(con_2)
-  set _TMP(con_3) [pw::Connector create]
-  $_TMP(con_3) addSegment $_TMP(PW_5)
-  unset _TMP(PW_5)
-  $_TMP(con_3) calculateDimension
+set _TMP(mode_7) [pw::Application begin UnstructuredSolver [list $_BL(1)]]
+  set _TMP(ENTS) [pw::Collection create]
+$_TMP(ENTS) set [list $_BL(1)]
+  $_BL(1) setUnstructuredSolverAttribute BoundaryDecay 0.995
+  $_TMP(ENTS) delete
+  unset _TMP(ENTS)
 $_TMP(mode_7) end
 unset _TMP(mode_7)
+pw::Application markUndoLevel {Solve}
 
-set _TMP(mode_8) [pw::Application begin Create]
-  set _CN(18) [pw::GridEntity getByName "con-3"]
-  set _TMP(PW_6) [pw::SegmentSpline create]
-  $_TMP(PW_6) addPoint [$_CN(17) getPosition -arc 0]
-  $_TMP(PW_6) addPoint [$_CN(2) getPosition -arc 0]
-  unset _TMP(con_3)
-  set _TMP(con_4) [pw::Connector create]
-  $_TMP(con_4) addSegment $_TMP(PW_6)
-  unset _TMP(PW_6)
-  $_TMP(con_4) calculateDimension
+set _TMP(mode_8) [pw::Application begin UnstructuredSolver [list $_BL(1)]]
+  $_TMP(mode_8) run Initialize
 $_TMP(mode_8) end
 unset _TMP(mode_8)
+pw::Application markUndoLevel {Solve}
 
-set _TMP(mode_9) [pw::Application begin Create]
-  set _CN(19) [pw::GridEntity getByName "con-4"]
-  set _TMP(PW_7) [pw::SegmentSpline create]
-  set _CN(20) [pw::GridEntity getByName "ramp_right"]
-  $_TMP(PW_7) addPoint [$_CN(9) getPosition -arc 0]
-  $_TMP(PW_7) addPoint [$_CN(3) getPosition -arc 1]
-  unset _TMP(con_4)
-  set _TMP(con_5) [pw::Connector create]
-  $_TMP(con_5) addSegment $_TMP(PW_7)
-  unset _TMP(PW_7)
-  $_TMP(con_5) calculateDimension
-$_TMP(mode_9) end
+set _TMP(mode_9) [pw::Application begin UnstructuredSolver [list $_BL(1)]]
+$_TMP(mode_9) abort
 unset _TMP(mode_9)
-
-set _TMP(mode_10) [pw::Application begin Create]
-  set _CN(21) [pw::GridEntity getByName "con-5"]
-  set _TMP(PW_8) [pw::SegmentSpline create]
-  set _CN(22) [pw::GridEntity getByName "ramp_left"]
-  $_TMP(PW_8) addPoint [$_CN(9) getPosition -arc 1]
-  $_TMP(PW_8) addPoint [$_CN(1) getPosition -arc 1]
-  unset _TMP(con_5)
-  set _TMP(con_6) [pw::Connector create]
-  $_TMP(con_6) addSegment $_TMP(PW_8)
-  unset _TMP(PW_8)
-  $_TMP(con_6) calculateDimension
-$_TMP(mode_10) end
-unset _TMP(mode_10)
-
-set _TMP(mode_10) [pw::Application begin Create]
-  set _CN(23) [pw::GridEntity getByName "con-6"]
-  set _TMP(PW_9) [pw::SegmentSpline create]
-  $_TMP(PW_9) addPoint [$_CN(11) getPosition -arc 0]
-  $_TMP(PW_9) addPoint [$_CN(22) getPosition -arc 1]
-  unset _TMP(con_6)
-  set _TMP(con_7) [pw::Connector create]
-  $_TMP(con_7) addSegment $_TMP(PW_9)
-  unset _TMP(PW_9)
-  $_TMP(con_7) calculateDimension
-$_TMP(mode_10) end
-unset _TMP(mode_10)
-
-set _TMP(mode_10) [pw::Application begin Create]
-  set _CN(24) [pw::GridEntity getByName "con-7"]
-  set _TMP(PW_10) [pw::SegmentSpline create]
-  $_TMP(PW_10) addPoint [$_CN(15) getPosition -arc 0]
-  $_TMP(PW_10) addPoint [$_CN(20) getPosition -arc 1]
-  unset _TMP(con_7)
-  set _TMP(con_8) [pw::Connector create]
-  $_TMP(con_8) addSegment $_TMP(PW_10)
-  unset _TMP(PW_10)
-  $_TMP(con_8) calculateDimension
-$_TMP(mode_10) end
-unset _TMP(mode_10)
-
-set _TMP(mode_10) [pw::Application begin Create]
-  set _CN(25) [pw::GridEntity getByName "con-8"]
-  set _TMP(PW_11) [pw::SegmentSpline create]
-  set _CN(26) [pw::GridEntity getByName "aft_outlet-1"]
-  $_TMP(PW_11) addPoint [$_CN(8) getPosition -arc 0]
-  $_TMP(PW_11) addPoint [$_CN(15) getPosition -arc 1]
-  unset _TMP(con_8)
-  set _TMP(con_9) [pw::Connector create]
-  $_TMP(con_9) addSegment $_TMP(PW_11)
-  unset _TMP(PW_11)
-  $_TMP(con_9) calculateDimension
-$_TMP(mode_10) end
-unset _TMP(mode_10)
-
-set _TMP(mode_10) [pw::Application begin Create]
-  set _CN(27) [pw::GridEntity getByName "con-9"]
-  set _TMP(PW_12) [pw::SegmentSpline create]
-  $_TMP(PW_12) addPoint [$_CN(11) getPosition -arc 1]
-  $_TMP(PW_12) addPoint [$_CN(8) getPosition -arc 1]
-  unset _TMP(con_9)
-  set _TMP(con_10) [pw::Connector create]
-  $_TMP(con_10) addSegment $_TMP(PW_12)
-  unset _TMP(PW_12)
-  $_TMP(con_10) calculateDimension
-$_TMP(mode_10) end
-unset _TMP(mode_10)
-
-set _TMP(mode_10) [pw::Application begin Create]
-  set _CN(28) [pw::GridEntity getByName "con-10"]
-  set _TMP(PW_13) [pw::SegmentSpline create]
-  $_TMP(PW_13) delete
-  unset _TMP(PW_13)
-$_TMP(mode_10) abort
-unset _TMP(mode_10)
-unset _TMP(con_10)
-set _TMP(PW_14) [pw::Collection create]
-$_TMP(PW_14) set [list $_CN(21) $_CN(24) $_CN(13) $_CN(16) $_CN(19) $_CN(28) $_CN(27) $_CN(25) $_CN(18) $_CN(23)]
-$_TMP(PW_14) do setDimension 100
-$_TMP(PW_14) delete
-unset _TMP(PW_14)
-
-pw::Application clearClipboard
-# Use the actual spacing
-set _TMP(INDEX) [lindex [$_CN(20) getSubConnectorRange 1] 0]
-set _TMP(ACTUAL_SPACE) [pwu::Vector3 length [pwu::Vector3 subtract [$_CN(20) getXYZ $_TMP(INDEX)] [$_CN(20) getXYZ [expr {$_TMP(INDEX) + 1}]]]]
-set _TMP(SPC_1) [pw::SpacingExplicit create]
-$_TMP(SPC_1) setValue $_TMP(ACTUAL_SPACE)
-unset _TMP(ACTUAL_SPACE)
-unset _TMP(INDEX)
-pw::Application setClipboard [list $_TMP(SPC_1)]
-$_TMP(SPC_1) delete
-unset _TMP(SPC_1)
-
-set _TMP(AVG_SPACE) 0.0
-set _TMP(COUNT) 0
-set _TMP(mode_10) [pw::Application begin Paste]
-  foreach _TMP(SPACE) [$_TMP(mode_10) getEntities] {
-    set _TMP(AVG_SPACE) [expr {$_TMP(AVG_SPACE) + [$_TMP(SPACE) getValue]}]
-    incr _TMP(COUNT)
-  }
-  if {$_TMP(COUNT) > 0} {
-    set _TMP(AVG_SPACE) [expr {$_TMP(AVG_SPACE) / $_TMP(COUNT)}]
-  }
-  unset _TMP(COUNT)
-  unset _TMP(SPACE)
-$_TMP(mode_10) abort
-unset _TMP(mode_10)
-
-set _TMP(mode_10) [pw::Application begin Modify [list $_CN(3)]]
-  set _TMP(PW_15) [$_CN(3) getDistribution 1]
-  $_TMP(PW_15) setEndSpacing $_TMP(AVG_SPACE)
-  unset _TMP(PW_15)
-$_TMP(mode_10) end
-unset _TMP(mode_10)
-unset _TMP(AVG_SPACE)
-
-set _TMP(AVG_SPACE) 0.0
-set _TMP(COUNT) 0
-set _TMP(mode_10) [pw::Application begin Paste]
-  foreach _TMP(SPACE) [$_TMP(mode_10) getEntities] {
-    set _TMP(AVG_SPACE) [expr {$_TMP(AVG_SPACE) + [$_TMP(SPACE) getValue]}]
-    incr _TMP(COUNT)
-  }
-  if {$_TMP(COUNT) > 0} {
-    set _TMP(AVG_SPACE) [expr {$_TMP(AVG_SPACE) / $_TMP(COUNT)}]
-  }
-  unset _TMP(COUNT)
-  unset _TMP(SPACE)
-$_TMP(mode_10) abort
-unset _TMP(mode_10)
-
-set _TMP(mode_10) [pw::Application begin Modify [list $_CN(10) $_CN(15) $_CN(14) $_CN(6) $_CN(5) $_CN(3) $_CN(1) $_CN(11)]]
-  set _TMP(PW_16) [$_CN(3) getDistribution 1]
-  $_TMP(PW_16) setEndSpacing $_TMP(AVG_SPACE)
-  unset _TMP(PW_16)
-  set _TMP(PW_17) [$_CN(1) getDistribution 1]
-  $_TMP(PW_17) setEndSpacing $_TMP(AVG_SPACE)
-  unset _TMP(PW_17)
-  set _TMP(PW_18) [$_CN(5) getDistribution 1]
-  $_TMP(PW_18) setBeginSpacing $_TMP(AVG_SPACE)
-  unset _TMP(PW_18)
-  set _TMP(PW_19) [$_CN(6) getDistribution 1]
-  $_TMP(PW_19) setBeginSpacing $_TMP(AVG_SPACE)
-  unset _TMP(PW_19)
-  set _TMP(PW_20) [$_CN(10) getDistribution 1]
-  $_TMP(PW_20) setEndSpacing $_TMP(AVG_SPACE)
-  unset _TMP(PW_20)
-  set _TMP(PW_21) [$_CN(14) getDistribution 1]
-  $_TMP(PW_21) setEndSpacing $_TMP(AVG_SPACE)
-  unset _TMP(PW_21)
-  set _TMP(PW_22) [$_CN(15) getDistribution 1]
-  $_TMP(PW_22) setBeginSpacing $_TMP(AVG_SPACE)
-  unset _TMP(PW_22)
-  set _TMP(PW_23) [$_CN(11) getDistribution 1]
-  $_TMP(PW_23) setBeginSpacing $_TMP(AVG_SPACE)
-  unset _TMP(PW_23)
-$_TMP(mode_10) end
-unset _TMP(mode_10)
-unset _TMP(AVG_SPACE)
-
-set _TMP(mode_10) [pw::Application begin Modify [list $_CN(21) $_CN(25) $_CN(24) $_CN(23) $_CN(19) $_CN(18) $_CN(28) $_CN(27)]]
-  set _TMP(PW_24) [$_CN(18) getDistribution 1]
-  $_TMP(PW_24) setEndSpacing 0.01
-  unset _TMP(PW_24)
-  set _TMP(PW_25) [$_CN(19) getDistribution 1]
-  $_TMP(PW_25) setEndSpacing 0.01
-  unset _TMP(PW_25)
-  set _TMP(PW_26) [$_CN(21) getDistribution 1]
-  $_TMP(PW_26) setEndSpacing 0.01
-  unset _TMP(PW_26)
-  set _TMP(PW_27) [$_CN(23) getDistribution 1]
-  $_TMP(PW_27) setEndSpacing 0.01
-  unset _TMP(PW_27)
-  set _TMP(PW_28) [$_CN(24) getDistribution 1]
-  $_TMP(PW_28) setEndSpacing 0.01
-  unset _TMP(PW_28)
-  set _TMP(PW_29) [$_CN(25) getDistribution 1]
-  $_TMP(PW_29) setEndSpacing 0.01
-  unset _TMP(PW_29)
-  set _TMP(PW_30) [$_CN(27) getDistribution 1]
-  $_TMP(PW_30) setBeginSpacing 0.01
-  unset _TMP(PW_30)
-  set _TMP(PW_31) [$_CN(28) getDistribution 1]
-  $_TMP(PW_31) setEndSpacing 0.01
-  unset _TMP(PW_31)
-$_TMP(mode_10) end
-unset _TMP(mode_10)
-
-set _TMP(PW_32) [pw::DomainStructured createFromConnectors -reject _TMP(unusedCons) -solid [list $_CN(1) $_CN(25) $_CN(11) $_CN(2) $_CN(12) $_CN(7) $_CN(20) $_CN(10) $_CN(15) $_CN(26) $_CN(23) $_CN(14) $_CN(9) $_CN(24) $_CN(8) $_CN(27) $_CN(17) $_CN(19) $_CN(3) $_CN(5) $_CN(13) $_CN(18) $_CN(6) $_CN(22) $_CN(4) $_CN(28) $_CN(21) $_CN(16)]]
-unset _TMP(unusedCons)
-set _TMP(PW_33) [pw::BlockStructured createFromDomains -poleDomains _TMP(poleDoms) -reject _TMP(unusedDoms) $_TMP(PW_32)]
-unset _TMP(unusedDoms)
-unset _TMP(poleDoms)
-unset _TMP(PW_33)
-unset _TMP(PW_32)
-
-pw::Application setCAESolver {CFD++} 3
-
-
-set _DM(1) [pw::GridEntity getByName "dom-4"]
-set _DM(2) [pw::GridEntity getByName "dom-10"]
-set _DM(3) [pw::GridEntity getByName "dom-1"]
-set _DM(4) [pw::GridEntity getByName "dom-2"]
-set _DM(5) [pw::GridEntity getByName "dom-3"]
-set _DM(6) [pw::GridEntity getByName "dom-5"]
-set _DM(7) [pw::GridEntity getByName "dom-6"]
-set _DM(8) [pw::GridEntity getByName "dom-7"]
-set _DM(9) [pw::GridEntity getByName "dom-8"]
-set _DM(10) [pw::GridEntity getByName "dom-9"]
-set _DM(11) [pw::GridEntity getByName "dom-11"]
-set _DM(12) [pw::GridEntity getByName "dom-12"]
-set _DM(13) [pw::GridEntity getByName "dom-13"]
-set _DM(14) [pw::GridEntity getByName "dom-14"]
-set _DM(15) [pw::GridEntity getByName "dom-15"]
-set _DM(16) [pw::GridEntity getByName "dom-16"]
-set _BL(1) [pw::GridEntity getByName "blk-1"]
-set _BL(2) [pw::GridEntity getByName "blk-2"]
-set _BL(3) [pw::GridEntity getByName "blk-3"]
-set _TMP(PW_18) [pw::BoundaryCondition getByName "Unspecified"]
-set _TMP(PW_19) [pw::BoundaryCondition create]
-pw::Application markUndoLevel {Create BC}
-
-set _TMP(PW_20) [pw::BoundaryCondition getByName "bc-2"]
-unset _TMP(PW_19)
-$_TMP(PW_20) setName "inlet"
-pw::Application markUndoLevel {Name BC}
-
-$_TMP(PW_20) apply [list [list $_BL(3) $_DM(8)]]
-pw::Application markUndoLevel {Set BC}
-
-set _TMP(PW_21) [pw::BoundaryCondition create]
-pw::Application markUndoLevel {Create BC}
-
-set _TMP(PW_22) [pw::BoundaryCondition getByName "bc-3"]
-unset _TMP(PW_21)
-$_TMP(PW_22) setName "wall_top"
-pw::Application markUndoLevel {Name BC}
-
-$_TMP(PW_22) apply [list [list $_BL(2) $_DM(7)] [list $_BL(3) $_DM(14)] [list $_BL(1) $_DM(3)]]
-pw::Application markUndoLevel {Set BC}
-
-set _TMP(PW_23) [pw::BoundaryCondition create]
-pw::Application markUndoLevel {Create BC}
-
-set _TMP(PW_24) [pw::BoundaryCondition getByName "bc-4"]
-unset _TMP(PW_23)
-$_TMP(PW_24) setName "wall_sides"
-pw::Application markUndoLevel {Name BC}
-
-$_TMP(PW_24) apply [list [list $_BL(3) $_DM(16)] [list $_BL(1) $_DM(10)] [list $_BL(1) $_DM(9)] [list $_BL(2) $_DM(11)] [list $_BL(2) $_DM(12)] [list $_BL(3) $_DM(15)]]
-pw::Application markUndoLevel {Set BC}
-
-set _TMP(PW_25) [pw::BoundaryCondition create]
-pw::Application markUndoLevel {Create BC}
-
-set _TMP(PW_26) [pw::BoundaryCondition getByName "bc-5"]
-unset _TMP(PW_25)
-$_TMP(PW_26) setName "wall_no_slip"
-pw::Application markUndoLevel {Name BC}
-
-$_TMP(PW_26) apply [list [list $_BL(1) $_DM(4)] [list $_BL(2) $_DM(6)] [list $_BL(3) $_DM(13)]]
-pw::Application markUndoLevel {Set BC}
-
-set _TMP(PW_27) [pw::BoundaryCondition create]
-pw::Application markUndoLevel {Create BC}
-
-set _TMP(PW_28) [pw::BoundaryCondition getByName "bc-6"]
-unset _TMP(PW_27)
-$_TMP(PW_28) setName "outlet"
-pw::Application markUndoLevel {Name BC}
-
-$_TMP(PW_28) apply [list [list $_BL(2) $_DM(5)]]
-pw::Application markUndoLevel {Set BC}
-
-unset _TMP(PW_18)
-unset _TMP(PW_20)
-unset _TMP(PW_22)
 unset _TMP(PW_24)
+unset _TMP(PW_25)
 unset _TMP(PW_26)
-unset _TMP(PW_28)
+unset _TMP(PW_27)
 
+puts "Setting boundary conditions"
+
+set _TMP(PW_28) [pw::BoundaryCondition getByName "Unspecified"]
+set _TMP(PW_29) [pw::BoundaryCondition create]
+pw::Application markUndoLevel {Create BC}
+
+set _TMP(PW_30) [pw::BoundaryCondition getByName "bc-2"]
+unset _TMP(PW_29)
+$_TMP(PW_30) setName "inlet"
+pw::Application markUndoLevel {Name BC}
+
+set _TMP(PW_31) [pw::BoundaryCondition create]
+pw::Application markUndoLevel {Create BC}
+
+set _TMP(PW_32) [pw::BoundaryCondition getByName "bc-3"]
+unset _TMP(PW_31)
+$_TMP(PW_32) setName "outlet"
+pw::Application markUndoLevel {Name BC}
+
+set _TMP(PW_33) [pw::BoundaryCondition create]
+pw::Application markUndoLevel {Create BC}
+
+set _TMP(PW_34) [pw::BoundaryCondition getByName "bc-4"]
+unset _TMP(PW_33)
+$_TMP(PW_34) setName "no-slip"
+pw::Application markUndoLevel {Name BC}
+
+set _TMP(PW_35) [pw::BoundaryCondition create]
+pw::Application markUndoLevel {Create BC}
+
+set _TMP(PW_36) [pw::BoundaryCondition getByName "bc-5"]
+unset _TMP(PW_35)
+set _TMP(PW_37) [pw::BoundaryCondition create]
+pw::Application markUndoLevel {Create BC}
+
+set _TMP(PW_38) [pw::BoundaryCondition getByName "bc-6"]
+unset _TMP(PW_37)
+$_TMP(PW_36) setName "slip"
+pw::Application markUndoLevel {Name BC}
+
+$_TMP(PW_38) setName "right_side"
+pw::Application markUndoLevel {Name BC}
+
+$_TMP(PW_30) apply [list [list $_BL(1) $_DM(6)]]
+pw::Application markUndoLevel {Set BC}
+
+$_TMP(PW_32) apply [list [list $_BL(1) $_DM(8)]]
+pw::Application markUndoLevel {Set BC}
+
+$_TMP(PW_34) apply [list [list $_BL(1) $_DM(1)] [list $_BL(1) $_DM(9)] [list $_BL(1) $_DM(4)]]
+pw::Application markUndoLevel {Set BC}
+
+$_TMP(PW_36) apply [list [list $_BL(1) $_DM(3)] [list $_BL(1) $_DM(5)] [list $_BL(1) $_DM(2)]]
+pw::Application markUndoLevel {Set BC}
+
+$_TMP(PW_38) apply [list [list $_BL(1) $_DM(7)]]
+pw::Application markUndoLevel {Set BC}
+
+unset _TMP(PW_28)
+unset _TMP(PW_30)
+unset _TMP(PW_32)
+unset _TMP(PW_34)
+unset _TMP(PW_36)
+unset _TMP(PW_38)
+
+puts "DONE!"
 
 # Zoom to geometry
 pw::Display resetView +Y
